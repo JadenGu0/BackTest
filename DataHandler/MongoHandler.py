@@ -1,3 +1,4 @@
+# encoding=utf8
 from pymongo import MongoClient
 from Enums.OrderStatus import OrderStatus
 from Enums.OrderType import OrderType
@@ -35,8 +36,8 @@ class MongoHandler(object):
         :return:
         """
         res={}
-        res['buy_order']=[i for i in self.__collection.find({'status':OrderStatus.HOLDING.value,'type':OrderType.BUY.value})]
-        res['sell_order']=[i for i in self.__collection.find({'status':OrderStatus.HOLDING.value,'type':OrderType.SELL.value})]
+        res['buy_order']=[i for i in self.__collection_order.find({'status':OrderStatus.HOLDING.value,'type':OrderType.BUY.value})]
+        res['sell_order']=[i for i in self.__collection_order.find({'status':OrderStatus.HOLDING.value,'type':OrderType.SELL.value})]
         return res
 
     def holdingorder_statistic(self, Ask=None, Bid=None):
@@ -51,47 +52,51 @@ class MongoHandler(object):
         sell_order = self.__collection_order.find({'status': OrderStatus.HOLDING.value, 'type': OrderType.SELL.value})
         res['buy_number'] = buy_order.count()
         res['sell_number'] = sell_order.count()
+
         buy_mount = 0
         sell_mount = 0
         buy_lot = 0
         sell_lot = 0
-        last_buy_openprice = \
-            self.__collection_order.find_one({'status': OrderStatus.HOLDING.value, 'type': OrderType.BUY.value})[
-                'openprice']
-        last_sell_openprice = \
-            self.__collection_order.find_one({'status': OrderStatus.HOLDING.value, 'type': OrderType.SELL.value})[
-                'openprice']
-        for i in buy_order:
-            buy_mount = buy_mount + round((Ask - i['openprice']) * 1000 * i['lot'], 2)
-            buy_lot = buy_lot + i['lot']
-            if last_buy_openprice > i['openprice']:
-                last_buy_openprice = i['openprice']
-        for i in sell_order:
-            sell_mount = sell_mount + round((i['openprice'] - Bid) * 1000 * i['lot'], 2)
-            sell_lot = sell_lot + i['lot']
-            if last_sell_openprice < i['openprice']:
-                last_sell_openprice = i['openprice']
-        res['buy_mount'] = buy_mount
-        res['buy_lot'] = buy_lot
-        res['sell_mount'] = sell_mount
-        res['sell_lot'] = sell_lot
-        res['last_buy_openprice'] = last_buy_openprice
-        res['last_sell_openprice'] = last_sell_openprice
+        if buy_order.count() != 0:
+            last_buy_openprice = \
+                self.__collection_order.find_one({'status': OrderStatus.HOLDING.value, 'type': OrderType.BUY.value})[
+                    'openprice']
+            for i in buy_order:
+                buy_mount = buy_mount + round((Ask - i['openprice']) * 1000 * i['lot'], 2)
+                buy_lot = buy_lot + i['lot']
+                if last_buy_openprice > i['openprice']:
+                    last_buy_openprice = i['openprice']
+            res['buy_mount'] = buy_mount
+            res['buy_lot'] = buy_lot
+            res['last_buy_openprice'] = last_buy_openprice
+
+        if sell_order.count() != 0:
+            last_sell_openprice = \
+                self.__collection_order.find_one({'status': OrderStatus.HOLDING.value, 'type': OrderType.SELL.value})[
+                    'openprice']
+            for i in sell_order:
+                sell_mount = sell_mount + round((i['openprice'] - Bid) * 1000 * i['lot'], 2)
+                sell_lot = sell_lot + i['lot']
+                if last_sell_openprice < i['openprice']:
+                    last_sell_openprice = i['openprice']
+            res['sell_mount'] = sell_mount
+            res['sell_lot'] = sell_lot
+            res['last_sell_openprice'] = last_sell_openprice
         return res
 
     def get_orderdetail(self, ticket=None):
         pass
 
-    def modify_order(self, **kwargs):
-        id=kwargs['_id']
-        for k,v in kwargs['data']:
+    def modify_order(self,modifyinfo=None):
+        print  modifyinfo
+        for k,v in modifyinfo['modifyinfo'].items():
+            self.__collection_order.update(
+                {'_id':modifyinfo['id']},
+                 {'$set':{k:v}}
+            )
 
-            pass
 
-def test(a,**kwargs):
 
-    print kwargs
-if __name__ == '__main__':
 
-    test(a=1,b={'a':1,'b':2})
+
 
