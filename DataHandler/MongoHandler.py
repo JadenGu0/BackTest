@@ -95,7 +95,8 @@ class MongoHandler(object):
                  {'$set':{k:v}}
             )
 
-
+    def arrgegate(self,pipeline=None):
+        return self.__collection_order.aggregate(pipeline)
 
 
 
