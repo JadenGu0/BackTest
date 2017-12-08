@@ -22,9 +22,8 @@ class MyStrategy(BaseStrategy):
         Bid = event.dict['data']['open']
         print event.dict['data']['time']
         Ask = Bid + SPREAD
-        orderinfo = self.mongohandler.allorder_info()
-        self.OrderPreProcess(Ask=Ask, Bid=Bid, DataSlice=event.dict['data'], OrderInfo=orderinfo,AccountMount=AccountMount)
-        # orderstatistic = self.mongohandler.holdingorder_statistic(Ask=Ask, Bid=Bid)
+        # orderstatistic = self.Holdingorder_Statistic(Ask=Ask,Bid=Bid)
+        #首选进行策略逻辑判断，由于测试策略不需要依照当前持仓单做判断，所有不需要调用self.Holdingorder_Statistic(）
         ma_now_long = Ma(period=10, shift=1, time=event.dict['data']['time']).get_Ma()
         ma_last_long = Ma(period=10, shift=2, time=event.dict['data']['time']).get_Ma()
         ma_now_short = Ma(period=5, shift=1, time=event.dict['data']['time']).get_Ma()
@@ -41,7 +40,13 @@ class MyStrategy(BaseStrategy):
                 stoploss=round((Bid + 0.00300), 5),
             )
             self.SendOrder(res)
-
+        #经过策略判断之后调用self.All_HoldingOrderinfo()统计当前持仓单
+        orderinfo = self.All_HoldingOrderinfo()
+        #调用时间处理函数保存当前时刻账户净值，最大净值以及最小净值
+        self.TimeInfo(Time=event.dict['data']['time'],Mount=AccountMount,High=event.dict['data']['high'],Low=event.dict['data']['low'])
+        #调用OrderProcece函数判断持仓单知否触发了止盈或者止损条件
+        if orderinfo is not None:
+            self.OrderProcess(Ask=Ask, Bid=Bid, DataSlice=event.dict['data'], OrderInfo=orderinfo,AccountMount=AccountMount)
 
 
 def test(eventEngine):

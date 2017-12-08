@@ -9,7 +9,7 @@ class MongoHandler(object):
         self.__magic = magic
         self.__client = MongoClient('localhost', 27017)
         self.__db = self.__client[self.__magic]
-        self.__collection_order = self.__db['OrderIndo']
+        self.__collection_order = self.__db['OrderInfo']
         self.__collection_time = self.__db['Time']
 
     def save_orderinfo(self, info=None):
@@ -18,7 +18,7 @@ class MongoHandler(object):
         :param info:
         :return:
         """
-        res = self.__collection_order.insert_one(info)
+        self.__collection_order.insert_one(info)
 
     def save_timeinfo(self, info=None):
         """
@@ -26,9 +26,9 @@ class MongoHandler(object):
         :param info:
         :return:
         """
-        res = self.__collection_time.insert_one(info)
+        self.__collection_time.insert_one(info)
 
-    def allorder_info(self):
+    def all_holdingorder(self):
         """
         返回所有持仓单订单信息，包含订单的每一个字段
         :param Ask:
