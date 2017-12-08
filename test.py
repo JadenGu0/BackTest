@@ -9,6 +9,7 @@ from Strategy.Indicators import BarInfo, Ma
 from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
 
+
 MAGIC = '1232525'
 SPREAD = 0.00030
 AccountMount = 10000
@@ -23,7 +24,7 @@ class MyStrategy(BaseStrategy):
         print event.dict['data']['time']
         Ask = Bid + SPREAD
         # orderstatistic = self.Holdingorder_Statistic(Ask=Ask,Bid=Bid)
-        #首选进行策略逻辑判断，由于测试策略不需要依照当前持仓单做判断，所有不需要调用self.Holdingorder_Statistic(）
+        # 首选进行策略逻辑判断，由于测试策略不需要依照当前持仓单做判断，所有不需要调用self.Holdingorder_Statistic(）
         ma_now_long = Ma(period=10, shift=1, time=event.dict['data']['time']).get_Ma()
         ma_last_long = Ma(period=10, shift=2, time=event.dict['data']['time']).get_Ma()
         ma_now_short = Ma(period=5, shift=1, time=event.dict['data']['time']).get_Ma()
@@ -40,13 +41,16 @@ class MyStrategy(BaseStrategy):
                 stoploss=round((Bid + 0.00300), 5),
             )
             self.SendOrder(res)
-        #经过策略判断之后调用self.All_HoldingOrderinfo()统计当前持仓单
+        # 经过策略判断之后调用self.All_HoldingOrderinfo()统计当前持仓单
         orderinfo = self.All_HoldingOrderinfo()
-        #调用时间处理函数保存当前时刻账户净值，最大净值以及最小净值
-        self.TimeInfo(Time=event.dict['data']['time'],Mount=AccountMount,High=event.dict['data']['high'],Low=event.dict['data']['low'])
-        #调用OrderProcece函数判断持仓单知否触发了止盈或者止损条件
+        # 调用时间处理函数保存当前时刻账户净值，最大净值以及最小净值
+        self.TimeInfo(Time=event.dict['data']['time'], Mount=AccountMount, High=event.dict['data']['high'],
+                                 Low=event.dict['data']['low'])
+        # 调用OrderProcece函数判断持仓单知否触发了止盈或者止损条件
         if orderinfo is not None:
-            self.OrderProcess(Ask=Ask, Bid=Bid, DataSlice=event.dict['data'], OrderInfo=orderinfo,AccountMount=AccountMount)
+            self.OrderProcess(Spread=SPREAD, DataSlice=event.dict['data'], OrderInfo=orderinfo,
+                              AccountMount=AccountMount)
+
 
 
 def test(eventEngine):
@@ -59,7 +63,7 @@ def test(eventEngine):
     # 获取数据
 
     data = DataHandle(data=pd.read_csv('.\HistoryData\EURUSD_1H.csv'), start='2017.01.01',
-                      end='2017.01.15').SplitData()
+                      end='2017.02.30').SplitData()
     for i in data:
         # 获取迭代产生的每一个数据切片
         new_data = DataSliceHandle(magic=MAGIC, eventEngine=eventEngine, data=i)

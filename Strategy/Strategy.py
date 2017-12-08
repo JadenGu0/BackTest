@@ -15,7 +15,7 @@ class BaseStrategy(object):
         self.__magic = magic
         self.__mongohandler = MongoHandler(self.__magic)
 
-    def OrderProcess(self, Ask=None, Bid=None, DataSlice=None, OrderInfo=None, AccountMount=None):
+    def OrderProcess(self, Spread=None, DataSlice=None, OrderInfo=None, AccountMount=None):
         # 在策略逻辑执行之前判断当前价位针对于持仓单是否会触发止盈和止损
         mount = self.MountCalculate(Mount=AccountMount)
         for item in OrderInfo['buy_order']:
@@ -91,43 +91,44 @@ class BaseStrategy(object):
         #     OrderEvent.dict = orderinfo
         #     self.__eventEngine.SendEvent(OrderEvent)
 
-    def Holdingorder_Statistic(self,Ask = None,Bid = None):
-        return self.__mongohandler.holdingorder_statistic(Ask=Ask,Bid=Bid)
+    def Holdingorder_Statistic(self, Ask=None, Bid=None):
+        return self.__mongohandler.holdingorder_statistic(Ask=Ask, Bid=Bid)
 
     def All_HoldingOrderinfo(self):
         return self.__mongohandler.all_holdingorder()
 
-    def TimeInfo(self,Time=None,Mount=None,High=None,Low=None):
-        #用来计算每个时刻的净值，余额，最大净值和最小净值
+    def TimeInfo(self, Time=None, Mount=None, High=None, Low=None):
+        # 用来计算每个时刻的净值，余额，最大净值和最小净值
         holdingorder_info = self.All_HoldingOrderinfo()
         mount = self.MountCalculate(Mount=Mount)
-        high_mount=0
-        low_mount=0
+        high_mount = 0
+        low_mount = 0
         if holdingorder_info['buy_order'] is not None:
             for i in holdingorder_info['buy_order']:
-                high_mount=high_mount+(High-i['openprice'])*i['lot']* 1000 * 100
-                low_mount=low_mount+(Low-i['openprice'])*i['lot']* 1000 * 100
+                high_mount = high_mount + (High - i['openprice']) * i['lot'] * 1000 * 100
+                low_mount = low_mount + (Low - i['openprice']) * i['lot'] * 1000 * 100
         if holdingorder_info['sell_order'] is not None:
             for i in holdingorder_info['sell_order']:
-                high_mount=high_mount+(i['openprice']-High)*i['lot']* 1000 * 100
-                low_mount=low_mount+(i['openprice']-Low)*i['lot']* 1000 * 100
-        max_mount=max(mount+high_mount,mount+low_mount)
-        min_mount=min(mount+high_mount,mount+low_mount)
-        self.__mongohandler.save_timeinfo(
-            info=dict(
+                high_mount = high_mount + (i['openprice'] - High) * i['lot'] * 1000 * 100
+                low_mount = low_mount + (i['openprice'] - Low) * i['lot'] * 1000 * 100
+        max_mount = max(mount + high_mount, mount + low_mount)
+        min_mount = min(mount + high_mount, mount + low_mount)
+        res=dict(
                 time=Time,
                 mount=mount,
                 max_mount=max_mount,
                 min_mount=min_mount
-            )
+        )
+        self.__mongohandler.save_timeinfo(
+            info=res
         )
 
 
-    def MountCalculate(self,Mount=None):
-        #计算当前账户净值
+    def MountCalculate(self, Mount=None):
+        # 计算当前账户净值
         pipline = [{'$group': {'_id': '$value', 'count': {'$sum': 1}}}]
         arrge_res = self.__mongohandler.arrgegate(pipline)
-        mount=Mount
+        mount = Mount
         if arrge_res is not None:
             for item in arrge_res:
 

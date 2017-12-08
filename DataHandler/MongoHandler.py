@@ -2,7 +2,7 @@
 from pymongo import MongoClient
 from Enums.OrderStatus import OrderStatus
 from Enums.OrderType import OrderType
-
+import datetime
 
 class MongoHandler(object):
     def __init__(self, magic):
@@ -11,6 +11,25 @@ class MongoHandler(object):
         self.__db = self.__client[self.__magic]
         self.__collection_order = self.__db['OrderInfo']
         self.__collection_time = self.__db['Time']
+
+    def get_timeinfo(self):
+        time=[]
+        mount=[]
+        max_mount=[]
+        min_mount=[]
+        res=dict(
+            time=time,
+            mount=mount,
+            max_mount=max_mount,
+            min_mount=min_mount
+        )
+        all_info=self.__collection_time.find()
+        for item in all_info:
+            time.append(datetime.datetime.strptime(item['time'], '%Y.%m.%d %H:%M:%S'))
+            mount.append(item['mount'])
+            max_mount.append(item['max_mount'])
+            min_mount.append(item['min_mount'])
+        return res
 
     def save_orderinfo(self, info=None):
         """
@@ -88,7 +107,6 @@ class MongoHandler(object):
         pass
 
     def modify_order(self,modifyinfo=None):
-        print  modifyinfo
         for k,v in modifyinfo['modifyinfo'].items():
             self.__collection_order.update(
                 {'_id':modifyinfo['id']},
