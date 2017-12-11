@@ -19,7 +19,7 @@ class BaseStrategy(object):
         # 在策略逻辑执行之前判断当前价位针对于持仓单是否会触发止盈和止损
         mount = self.MountCalculate(Mount=AccountMount)
         for item in OrderInfo['buy_order']:
-            if item['type'] == OrderType.BUY.value and item['stoploss'] is not None:
+            if item['type'] == OrderType.BUY.value and 'stoploss' in item:
                 if DataSlice['low'] <= item['stoploss']:
                     # 多单止损出场  修改数据库记录
                     value = round((round(item['stoploss'], 5) - item['openprice']) * item['lot'] * 1000 * 100, 2)
@@ -31,7 +31,7 @@ class BaseStrategy(object):
                                                closeprice=round(item['stoploss'], 5)))
 
                     self.ModifyOrder(res)
-            if item['type'] == OrderType.BUY.value and item['takeprofit'] is not None:
+            if item['type'] == OrderType.BUY.value and 'takeprofit' in item:
                 if DataSlice['high'] >= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
                     value = round((round(item['takeprofit'], 5) - item['openprice']) * item['lot'] * 1000 * 100, 2)
@@ -43,7 +43,7 @@ class BaseStrategy(object):
                                                closeprice=round(item['takeprofit'], 5)))
                     self.ModifyOrder(res)
         for item in OrderInfo['sell_order']:
-            if item['type'] == OrderType.SELL.value and item['stoploss'] is not None:
+            if item['type'] == OrderType.SELL.value and 'stoploss' in item:
                 if DataSlice['high'] >= item['stoploss']:
                     # 空单止损出场 修改数据库记录
                     value = round((item['openprice']-round(item['stoploss'],5)) * item['lot'] * 1000 * 100, 2)
@@ -54,7 +54,7 @@ class BaseStrategy(object):
                                                closetime=DataSlice['time'],
                                                closeprice=round(item['stoploss'], 5)))
                     self.ModifyOrder(res)
-            if item['type'] == OrderType.SELL.value and item['takeprofit'] is not None:
+            if item['type'] == OrderType.SELL.value and 'takeprofit' in item:
                 if DataSlice['low'] <= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
                     value = round((item['openprice']-round(item['takeprofit'],5)) * item['lot'] * 1000 * 100, 2)

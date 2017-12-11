@@ -86,27 +86,39 @@ class MongoHandler(object):
             last_buy_openprice = \
                 self.__collection_order.find_one({'status': OrderStatus.HOLDING.value, 'type': OrderType.BUY.value})[
                     'openprice']
+            max_buy_lot = \
+                self.__collection_order.find_one({'status':OrderStatus.HOLDING.value,'type':OrderType.BUY.value})[
+                    'lot']
             for i in buy_order:
                 buy_mount = buy_mount + round((Ask - i['openprice']) * 1000 * i['lot'], 2)
                 buy_lot = buy_lot + i['lot']
                 if last_buy_openprice > i['openprice']:
                     last_buy_openprice = i['openprice']
+                if max_buy_lot < i['lot']:
+                    max_buy_lot=i['lot']
             res['buy_mount'] = buy_mount
             res['buy_lot'] = buy_lot
+            res['max_buy_lot'] = max_buy_lot
             res['last_buy_openprice'] = last_buy_openprice
 
         if sell_order.count() != 0:
             last_sell_openprice = \
                 self.__collection_order.find_one({'status': OrderStatus.HOLDING.value, 'type': OrderType.SELL.value})[
                     'openprice']
+            max_sell_lot= \
+                self.__collection_order.find_one({'status':OrderStatus.HOLDING.value,'type':OrderType.SELL.value})[
+                    'lot']
             for i in sell_order:
                 sell_mount = sell_mount + round((i['openprice'] - Bid) * 1000 * i['lot'], 2)
                 sell_lot = sell_lot + i['lot']
                 if last_sell_openprice < i['openprice']:
                     last_sell_openprice = i['openprice']
+                if max_sell_lot < i['lot']:
+                    max_sell_lot=i['lot']
             res['sell_mount'] = sell_mount
             res['sell_lot'] = sell_lot
             res['last_sell_openprice'] = last_sell_openprice
+            res['max_sell_lot']=max_sell_lot
         return res
 
     def get_orderdetail(self, ticket=None):
