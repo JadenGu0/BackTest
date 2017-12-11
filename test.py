@@ -4,7 +4,6 @@ from EventEngine.EventEngine import EventEngine
 from Strategy.Strategy import BaseStrategy
 from DataHandler.DataHandle import DataSliceHandle, DataHandle
 import pandas as pd
-from config.config import DATA_ROOT_PATH
 from Strategy.Indicators import BarInfo, Ma
 from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
@@ -24,22 +23,35 @@ class MyStrategy(BaseStrategy):
         print event.dict['data']['time']
         Ask = Bid + SPREAD
         orderstatistic = self.Holdingorder_Statistic(Ask=Ask,Bid=Bid)
+        ma_now_long = Ma(period=10, shift=1, time=event.dict['data']['time']).get_Ma()
+        ma_last_long = Ma(period=10, shift=2, time=event.dict['data']['time']).get_Ma()
+        ma_now_short = Ma(period=5, shift=1, time=event.dict['data']['time']).get_Ma()
+        ma_last_short = Ma(period=5, shift=2, time=event.dict['data']['time']).get_Ma()
         # 首选进行策略逻辑判断，由于测试策略不需要依照当前持仓单做判断，所有不需要调用self.Holdingorder_Statistic(）
         if orderstatistic['sell_number'] == 0:
-            ma_now_long = Ma(period=10, shift=1, time=event.dict['data']['time']).get_Ma()
-            ma_last_long = Ma(period=10, shift=2, time=event.dict['data']['time']).get_Ma()
-            ma_now_short = Ma(period=5, shift=1, time=event.dict['data']['time']).get_Ma()
-            ma_last_short = Ma(period=5, shift=2, time=event.dict['data']['time']).get_Ma()
             if ma_last_long < ma_last_short and ma_now_long > ma_now_short:
                 res = dict(
                     status=OrderStatus.HOLDING.value,
                     type=OrderType.SELL.value,
                     opentime=event.dict['data']['time'],
                     magic=MAGIC,
-                    lot=0.01,
+                    lot=0.1,
                     openprice=Bid,
                     takeprofit=round((Bid - 0.00300), 5),
                     stoploss=round((Bid + 0.00300), 5),
+                )
+                self.SendOrder(res)
+        if orderstatistic['buy_number'] == 0:
+            if ma_last_long > ma_last_short and ma_now_long < ma_now_short:
+                res=dict(
+                    status=OrderStatus.HOLDING.value,
+                    type=OrderType.BUY.value,
+                    opentime=event.dict['data']['time'],
+                    magic=MAGIC,
+                    lot=0.1,
+                    openprice=Ask,
+                    takeprofit=round((Ask+0.00300),5),
+                    stoploss=round((Ask-0.00300),5)
                 )
                 self.SendOrder(res)
         # 经过策略判断之后调用self.All_HoldingOrderinfo()统计当前持仓单

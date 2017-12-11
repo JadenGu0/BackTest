@@ -47,7 +47,6 @@ class BaseStrategy(object):
                 if DataSlice['high'] >= item['stoploss']:
                     # 空单止损出场 修改数据库记录
                     value = round((item['openprice']-round(item['stoploss'],5)) * item['lot'] * 1000 * 100, 2)
-                    print "stoplossvalule %d" %value
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -59,7 +58,6 @@ class BaseStrategy(object):
                 if DataSlice['low'] <= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
                     value = round((item['openprice']-round(item['takeprofit'],5)) * item['lot'] * 1000 * 100, 2)
-                    print "takeprofitvalue %d" %value
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -105,6 +103,15 @@ class BaseStrategy(object):
         mount = self.MountCalculate(Mount=Mount)
         high_mount = 0
         low_mount = 0
+        order_info=self.__mongohandler.search(opentime=Time)
+        buy_lot=0
+        sell_lot=0
+        if order_info is not None:
+            for item in order_info:
+                if item['type'] == OrderType.SELL.value:
+                    sell_lot=sell_lot+item['lot']
+                if item['type'] == OrderType.BUY.value:
+                    buy_lot=buy_lot+item['lot']
         if holdingorder_info['buy_order'] is not None:
             for i in holdingorder_info['buy_order']:
                 high_mount = high_mount + (High - i['openprice']) * i['lot'] * 1000 * 100
@@ -119,7 +126,9 @@ class BaseStrategy(object):
                 time=Time,
                 mount=mount,
                 max_mount=max_mount,
-                min_mount=min_mount
+                min_mount=min_mount,
+                buy_lot=buy_lot,
+                sell_lot=sell_lot
         )
         self.__mongohandler.save_timeinfo(
             info=res

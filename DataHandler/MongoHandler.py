@@ -17,11 +17,15 @@ class MongoHandler(object):
         mount=[]
         max_mount=[]
         min_mount=[]
+        buy_lot=[]
+        sell_lot=[]
         res=dict(
             time=time,
             mount=mount,
             max_mount=max_mount,
-            min_mount=min_mount
+            min_mount=min_mount,
+            buy_lot=buy_lot,
+            sell_lot=sell_lot
         )
         all_info=self.__collection_time.find()
         for item in all_info:
@@ -29,6 +33,8 @@ class MongoHandler(object):
             mount.append(item['mount'])
             max_mount.append(item['max_mount'])
             min_mount.append(item['min_mount'])
+            buy_lot.append(item['buy_lot'])
+            sell_lot.append(-item['sell_lot'])
         return res
 
     def save_orderinfo(self, info=None):
@@ -116,6 +122,7 @@ class MongoHandler(object):
     def arrgegate(self,pipeline=None):
         return self.__collection_order.aggregate(pipeline)
 
-
+    def search(self,**kwargs):
+            return self.__collection_order.find(kwargs)
 
 
