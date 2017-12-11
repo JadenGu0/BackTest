@@ -46,7 +46,8 @@ class BaseStrategy(object):
             if item['type'] == OrderType.SELL.value and item['stoploss'] is not None:
                 if DataSlice['high'] >= item['stoploss']:
                     # 空单止损出场 修改数据库记录
-                    value = round((round(item['stoploss'], 5) - item['openprice']) * item['lot'] * 1000 * 100, 2)
+                    value = round((item['openprice']-round(item['stoploss'],5)) * item['lot'] * 1000 * 100, 2)
+                    print "stoplossvalule %d" %value
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -57,7 +58,8 @@ class BaseStrategy(object):
             if item['type'] == OrderType.SELL.value and item['takeprofit'] is not None:
                 if DataSlice['low'] <= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
-                    value = round((round(item['takeprofit'], 5) - item['openprice']) * item['lot'] * 1000 * 100, 2)
+                    value = round((item['openprice']-round(item['takeprofit'],5)) * item['lot'] * 1000 * 100, 2)
+                    print "takeprofitvalue %d" %value
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],

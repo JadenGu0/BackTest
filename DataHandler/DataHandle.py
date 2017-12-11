@@ -36,7 +36,8 @@ class DataSliceHandle(object):
         self.__open = data[1]
         self.__high = data[2]
         self.__low = data[3]
-        self.__volume = data[4]
+        self.__close = data[4]
+        self.__volume = data[5]
         self.__magic = magic
 
     def SendDataEvent(self, type):
@@ -50,6 +51,7 @@ class DataSliceHandle(object):
         data['open']=self.__open
         data['high']=self.__high
         data['low']=self.__low
+        data['close']=self.__close
         data['volume']=self.__volume
         DataEvent.dict['data']=data
         DataEvent.dict['magic'] = self.__magic

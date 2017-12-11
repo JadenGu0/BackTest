@@ -23,24 +23,25 @@ class MyStrategy(BaseStrategy):
         Bid = event.dict['data']['open']
         print event.dict['data']['time']
         Ask = Bid + SPREAD
-        # orderstatistic = self.Holdingorder_Statistic(Ask=Ask,Bid=Bid)
+        orderstatistic = self.Holdingorder_Statistic(Ask=Ask,Bid=Bid)
         # 首选进行策略逻辑判断，由于测试策略不需要依照当前持仓单做判断，所有不需要调用self.Holdingorder_Statistic(）
-        ma_now_long = Ma(period=10, shift=1, time=event.dict['data']['time']).get_Ma()
-        ma_last_long = Ma(period=10, shift=2, time=event.dict['data']['time']).get_Ma()
-        ma_now_short = Ma(period=5, shift=1, time=event.dict['data']['time']).get_Ma()
-        ma_last_short = Ma(period=5, shift=2, time=event.dict['data']['time']).get_Ma()
-        if ma_last_long < ma_last_short and ma_now_long > ma_now_short:
-            res = dict(
-                status=OrderStatus.HOLDING.value,
-                type=OrderType.SELL.value,
-                opentime=event.dict['data']['time'],
-                magic=MAGIC,
-                lot=0.01,
-                openprice=Bid,
-                takeprofit=round((Bid - 0.00300), 5),
-                stoploss=round((Bid + 0.00300), 5),
-            )
-            self.SendOrder(res)
+        if orderstatistic['sell_number'] == 0:
+            ma_now_long = Ma(period=10, shift=1, time=event.dict['data']['time']).get_Ma()
+            ma_last_long = Ma(period=10, shift=2, time=event.dict['data']['time']).get_Ma()
+            ma_now_short = Ma(period=5, shift=1, time=event.dict['data']['time']).get_Ma()
+            ma_last_short = Ma(period=5, shift=2, time=event.dict['data']['time']).get_Ma()
+            if ma_last_long < ma_last_short and ma_now_long > ma_now_short:
+                res = dict(
+                    status=OrderStatus.HOLDING.value,
+                    type=OrderType.SELL.value,
+                    opentime=event.dict['data']['time'],
+                    magic=MAGIC,
+                    lot=0.01,
+                    openprice=Bid,
+                    takeprofit=round((Bid - 0.00300), 5),
+                    stoploss=round((Bid + 0.00300), 5),
+                )
+                self.SendOrder(res)
         # 经过策略判断之后调用self.All_HoldingOrderinfo()统计当前持仓单
         orderinfo = self.All_HoldingOrderinfo()
         # 调用时间处理函数保存当前时刻账户净值，最大净值以及最小净值
