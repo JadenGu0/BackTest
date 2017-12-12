@@ -1,5 +1,5 @@
 # encoding=utf8
-from config.config import DATA_ROOT_PATH
+import ConfigParser
 import pandas as pd
 
 POINT = 5
@@ -7,9 +7,11 @@ POINT = 5
 
 class Indicator(object):
     def __init__(self, period=None, shift=None, time=None):
+        self.__conf = ConfigParser.ConfigParser()
+        self.__conf.read('.\config\\a.config')
         self.__period = period
         self.__shift = shift
-        data = pd.read_csv('.\HistoryData\EURUSD_1H.csv')
+        data = pd.read_csv(self.__conf.read('common','data_path'))
         self.__time = time
         if period is not None:
             self.data = data[data['Time (UTC)'] <= time][-self.__period + self.__shift:-self.__shift]

@@ -2,20 +2,26 @@
 from DataHandler.MongoHandler import MongoHandler
 from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
+import ConfigParser
 
 
 class BaseStrategy(object):
-    def __init__(self, magic):
+    def __init__(self):
         # self.__eventEngine = eventEngine
         # self.__eventEngine.AddEventListener(type_=EVENT_NEWORDER, handler=self.SendOrder)
         # # self.__eventEngine.AddEventListener(type_=EVENT_CLOSEORDER, handler=self.CloseOrder)
         # self.__eventEngine.AddEventListener(type_=EVENT_MODIFYORDER, handler=self.ModifyOrder)
-        self.__magic = magic
-        self.__mongohandler = MongoHandler(self.__magic)
+        self.__conf = ConfigParser.ConfigParser()
+        self.__conf.read('D:\Github\BackTest\config\\a.config')
+        self.magic = self.__conf.get('common', 'magic')
+        self.__mongohandler = MongoHandler(self.magic)
+        self.spread = float(self.__conf.get('common', 'spread'))
+        self.data_path = self.__conf.get('common', 'data_path')
+        self.mount = int(self.__conf.get('account', 'mount'))
 
-    def OrderProcess(self, Spread=None, DataSlice=None, OrderInfo=None, AccountMount=None):
+    def OrderProcess(self, DataSlice=None, OrderInfo=None):
         # 在策略逻辑执行之前判断当前价位针对于持仓单是否会触发止盈和止损
-        mount = self.MountCalculate(Mount=AccountMount)
+        mount = self.MountCalculate()
         for item in OrderInfo['buy_order']:
             if item['type'] == OrderType.BUY.value and 'stoploss' in item:
                 if DataSlice['low'] <= item['stoploss']:
@@ -42,10 +48,11 @@ class BaseStrategy(object):
                     self.ModifyOrder(res)
         for item in OrderInfo['sell_order']:
             if item['type'] == OrderType.SELL.value and 'stoploss' in item:
-                if DataSlice['high'] >= item['stoploss']-Spread:
+                if DataSlice['high'] >= item['stoploss'] - self.spread:
                     # 空单止损出场 修改数据库记录
                     # 注意 空单止损是提前点差出场的
-                    value = round((item['openprice'] - round(item['stoploss']-Spread, 5)) * item['lot'] * 1000 * 100, 2)
+                    value = round(
+                        (item['openprice'] - round(item['stoploss'] - self.spread, 5)) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -54,10 +61,11 @@ class BaseStrategy(object):
                                                closeprice=round(item['stoploss'], 5)))
                     self.ModifyOrder(res)
             if item['type'] == OrderType.SELL.value and 'takeprofit' in item:
-                if DataSlice['low'] <= item['takeprofit']-Spread:
+                if DataSlice['low'] <= item['takeprofit'] - self.spread:
                     # 多单止盈出场 修改数据库记录
                     # 注意 空单止盈是过点差止盈
-                    value = round((item['openprice'] - round(item['takeprofit']-Spread, 5)) * item['lot'] * 1000 * 100, 2)
+                    value = round(
+                        (item['openprice'] - round(item['takeprofit'] - self.spread, 5)) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -97,10 +105,10 @@ class BaseStrategy(object):
     def All_HoldingOrderinfo(self):
         return self.__mongohandler.all_holdingorder()
 
-    def TimeInfo(self, Time=None, Mount=None, High=None, Low=None):
+    def TimeInfo(self, Time=None, High=None, Low=None):
         # 用来计算每个时刻的净值，余额，最大净值和最小净值
         holdingorder_info = self.All_HoldingOrderinfo()
-        mount = self.MountCalculate(Mount=Mount)
+        mount = self.MountCalculate()
         high_mount = 0
         low_mount = 0
         order_info = self.__mongohandler.search(opentime=Time)
@@ -134,11 +142,11 @@ class BaseStrategy(object):
             info=res
         )
 
-    def MountCalculate(self, Mount=None):
+    def MountCalculate(self):
         # 计算当前账户净值
         pipline = [{'$group': {'_id': '$value', 'count': {'$sum': 1}}}]
         arrge_res = self.__mongohandler.arrgegate(pipline)
-        mount = Mount
+        mount = self.mount
         if arrge_res is not None:
             for item in arrge_res:
                 if item['_id'] is not None:

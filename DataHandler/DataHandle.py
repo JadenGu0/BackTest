@@ -1,5 +1,7 @@
 # encoding=utf8
 from EventEngine.EventEngine import Event
+import ConfigParser
+import pandas as pd
 
 
 class DataHandle(object):
@@ -7,10 +9,12 @@ class DataHandle(object):
     数据预处理类，用于讲数据按照开始和结束时间切片并返回
     """
 
-    def __init__(self, data, start=None, end=None):
-        self.data = data
-        self.start = start
-        self.end = end
+    def __init__(self):
+        self.__conf = ConfigParser.ConfigParser()
+        self.__conf.read('D:\Github\BackTest\config\\a.config')
+        self.data = pd.read_csv(self.__conf.get('common', 'data_path'))
+        self.start = self.__conf.get('common', 'start')
+        self.end = self.__conf.get('common', 'end')
 
     def SplitData(self):
         data = self.data[self.data['Time (UTC)'] >= self.start]
@@ -23,7 +27,7 @@ class DataSliceHandle(object):
     用来处理取到的数据切片
     """
 
-    def __init__(self, eventEngine, data=None, magic=None):
+    def __init__(self, eventEngine, data=None):
         """
         构造函数，将数据切片中的数据存入不同的变量中并制定事件处理引擎
         :param eventEngine:
@@ -38,7 +42,9 @@ class DataSliceHandle(object):
         self.__low = data[3]
         self.__close = data[4]
         self.__volume = data[5]
-        self.__magic = magic
+        self.__conf = ConfigParser.ConfigParser()
+        self.__conf.read('D:\Github\BackTest\config\\a.config')
+        self.__magic = self.__conf.get('common', 'magic')
 
     def SendDataEvent(self, type):
         """
@@ -46,13 +52,13 @@ class DataSliceHandle(object):
         :return:
         """
         DataEvent = Event(type=type)
-        data={}
-        data['time']=self.__time
-        data['open']=self.__open
-        data['high']=self.__high
-        data['low']=self.__low
-        data['close']=self.__close
-        data['volume']=self.__volume
-        DataEvent.dict['data']=data
+        data = {}
+        data['time'] = self.__time
+        data['open'] = self.__open
+        data['high'] = self.__high
+        data['low'] = self.__low
+        data['close'] = self.__close
+        data['volume'] = self.__volume
+        DataEvent.dict['data'] = data
         DataEvent.dict['magic'] = self.__magic
         self.__eventEngine.SendEvent(DataEvent)
