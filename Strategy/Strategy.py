@@ -1,6 +1,4 @@
 # encoding=utf8
-from EventEngine.EventEngine import Event
-from EventEngine.EventType import EVENT_CLOSEORDER, EVENT_MODIFYORDER, EVENT_NEWORDER, EVENT_NEWDATA
 from DataHandler.MongoHandler import MongoHandler
 from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
@@ -44,9 +42,10 @@ class BaseStrategy(object):
                     self.ModifyOrder(res)
         for item in OrderInfo['sell_order']:
             if item['type'] == OrderType.SELL.value and 'stoploss' in item:
-                if DataSlice['high'] >= item['stoploss']:
+                if DataSlice['high'] >= item['stoploss']-Spread:
                     # 空单止损出场 修改数据库记录
-                    value = round((item['openprice']-round(item['stoploss'],5)) * item['lot'] * 1000 * 100, 2)
+                    # 注意 空单止损是提前点差出场的
+                    value = round((item['openprice'] - round(item['stoploss']-Spread, 5)) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -55,9 +54,10 @@ class BaseStrategy(object):
                                                closeprice=round(item['stoploss'], 5)))
                     self.ModifyOrder(res)
             if item['type'] == OrderType.SELL.value and 'takeprofit' in item:
-                if DataSlice['low'] <= item['takeprofit']:
+                if DataSlice['low'] <= item['takeprofit']-Spread:
                     # 多单止盈出场 修改数据库记录
-                    value = round((item['openprice']-round(item['takeprofit'],5)) * item['lot'] * 1000 * 100, 2)
+                    # 注意 空单止盈是过点差止盈
+                    value = round((item['openprice'] - round(item['takeprofit']-Spread, 5)) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -103,15 +103,15 @@ class BaseStrategy(object):
         mount = self.MountCalculate(Mount=Mount)
         high_mount = 0
         low_mount = 0
-        order_info=self.__mongohandler.search(opentime=Time)
-        buy_lot=0
-        sell_lot=0
+        order_info = self.__mongohandler.search(opentime=Time)
+        buy_lot = 0
+        sell_lot = 0
         if order_info is not None:
             for item in order_info:
                 if item['type'] == OrderType.SELL.value:
-                    sell_lot=sell_lot+item['lot']
+                    sell_lot = sell_lot + item['lot']
                 if item['type'] == OrderType.BUY.value:
-                    buy_lot=buy_lot+item['lot']
+                    buy_lot = buy_lot + item['lot']
         if holdingorder_info['buy_order'] is not None:
             for i in holdingorder_info['buy_order']:
                 high_mount = high_mount + (High - i['openprice']) * i['lot'] * 1000 * 100
@@ -122,18 +122,17 @@ class BaseStrategy(object):
                 low_mount = low_mount + (i['openprice'] - Low) * i['lot'] * 1000 * 100
         max_mount = max(mount + high_mount, mount + low_mount)
         min_mount = min(mount + high_mount, mount + low_mount)
-        res=dict(
-                time=Time,
-                mount=mount,
-                max_mount=max_mount,
-                min_mount=min_mount,
-                buy_lot=buy_lot,
-                sell_lot=sell_lot
+        res = dict(
+            time=Time,
+            mount=mount,
+            max_mount=max_mount,
+            min_mount=min_mount,
+            buy_lot=buy_lot,
+            sell_lot=sell_lot
         )
         self.__mongohandler.save_timeinfo(
             info=res
         )
-
 
     def MountCalculate(self, Mount=None):
         # 计算当前账户净值
@@ -142,7 +141,6 @@ class BaseStrategy(object):
         mount = Mount
         if arrge_res is not None:
             for item in arrge_res:
-
                 if item['_id'] is not None:
                     mount = mount + item['count'] * item['_id']
         return mount

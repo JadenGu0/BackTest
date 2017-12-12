@@ -10,15 +10,15 @@ class Indicator(object):
         self.__period = period
         self.__shift = shift
         data = pd.read_csv('.\HistoryData\EURUSD_1H.csv')
-        self.__time=time
+        self.__time = time
         if period is not None:
             self.data = data[data['Time (UTC)'] <= time][-self.__period + self.__shift:-self.__shift]
-        elif period is None and shift!=0:
-            self.data=data[data['Time (UTC)']<time][-shift:]
+        elif period is None and shift != 0:
+            self.data = data[data['Time (UTC)'] < time][-shift:]
 
 
 class Ma(Indicator):
-    def __init__(self, period=None, shift=None,time=None):
+    def __init__(self, period=None, shift=None, time=None):
         Indicator.__init__(self, period, shift, time)
 
     def get_Ma(self):
@@ -40,15 +40,16 @@ class Low(Indicator):
     def get_Low(self):
         return round(self.data['Low'].min(), POINT)
 
+
 class BarInfo(Indicator):
-    def __init__(self,period=None,shift=None,time=None):
-        Indicator.__init__(self,period,shift,time)
+    def __init__(self, period=None, shift=None, time=None):
+        Indicator.__init__(self, period, shift, time)
 
     def get_barinfo(self):
-        res={}
-        res['open']=self.data['Open'].values
-        res['high']=self.data['High'].values
-        res['close']=self.data['Close'].values
-        res['low']=self.data['Low'].values
-        res['time']=self.data['Time (UTC)'].values
+        res = {}
+        res['open'] = self.data['Open'].values
+        res['high'] = self.data['High'].values
+        res['close'] = self.data['Close'].values
+        res['low'] = self.data['Low'].values
+        res['time'] = self.data['Time (UTC)'].values
         return res
