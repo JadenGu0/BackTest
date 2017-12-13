@@ -11,7 +11,7 @@ class DataHandle(object):
 
     def __init__(self):
         self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\a.config')
+        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
         self.data = pd.read_csv(self.__conf.get('common', 'data_path'))
         self.start = self.__conf.get('common', 'start')
         self.end = self.__conf.get('common', 'end')
@@ -43,7 +43,7 @@ class DataSliceHandle(object):
         self.__close = data[4]
         self.__volume = data[5]
         self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\a.config')
+        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
         self.__magic = self.__conf.get('common', 'magic')
 
     def SendDataEvent(self, type):

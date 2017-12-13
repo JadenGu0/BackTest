@@ -25,8 +25,8 @@ class Graph(object):
 
 
 if __name__ == '__main__':
-    timeinfo = MongoHandler(magic='1').get_timeinfo()
-    fig = plt.figure("Strategy Tester of 1")
+    timeinfo = MongoHandler(magic='122').get_timeinfo()
+    fig = plt.figure("Strategy Tester of 122")
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
     ax1.set_title('Balance Graph')

@@ -9,7 +9,7 @@ import sys
 class BaseStrategy(object):
     def __init__(self):
         self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\a.config')
+        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
         self.magic = self.__conf.get('common', 'magic')
         self.__mongohandler = MongoHandler(self.magic)
         self.spread = float(self.__conf.get('common', 'spread'))
@@ -36,7 +36,7 @@ class BaseStrategy(object):
             if item['type'] == OrderType.BUY.value and 'stoploss' in item:
                 if DataSlice['low'] <= item['stoploss']:
                     # 多单止损出场  修改数据库记录
-                    value = round((round(item['stoploss'], 5) - item['openprice']) * item['lot'] * 1000 * 100, 2)
+                    value = round((round(item['stoploss'], 5) - item['openprice']-self.spread) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -48,7 +48,7 @@ class BaseStrategy(object):
             if item['type'] == OrderType.BUY.value and 'takeprofit' in item:
                 if DataSlice['high'] >= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
-                    value = round((round(item['takeprofit'], 5) - item['openprice']) * item['lot'] * 1000 * 100, 2)
+                    value = round((round(item['takeprofit'], 5) - item['openprice']-self.spread) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -62,7 +62,7 @@ class BaseStrategy(object):
                     # 空单止损出场 修改数据库记录
                     # 注意 空单止损是提前点差出场的
                     value = round(
-                        (item['openprice'] - round(item['stoploss'] - self.spread, 5)) * item['lot'] * 1000 * 100, 2)
+                        (item['openprice'] - round(item['stoploss'] - self.spread, 5)-self.spread) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -75,7 +75,7 @@ class BaseStrategy(object):
                     # 多单止盈出场 修改数据库记录
                     # 注意 空单止盈是过点差止盈
                     value = round(
-                        (item['openprice'] - round(item['takeprofit'] - self.spread, 5)) * item['lot'] * 1000 * 100, 2)
+                        (item['openprice'] - round(item['takeprofit'] - self.spread, 5)-self.spread) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -92,7 +92,7 @@ class BaseStrategy(object):
         """
 
     def SendOrder(self, orderinfo=None):
-        self.__logger.info('TIME:%s - new order open with lot:%f at %f' %(orderinfo['opentime'],orderinfo['lot'],orderinfo['openprice']))
+        self.__logger.warning('TIME:%s - new order open with lot:%f at %f' %(orderinfo['opentime'],orderinfo['lot'],orderinfo['openprice']))
         self.__mongohandler.save_orderinfo(orderinfo)
 
     # def CloseOrder(self, ticket, dataslice=None):

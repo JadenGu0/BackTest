@@ -8,15 +8,15 @@ POINT = 5
 class Indicator(object):
     def __init__(self, period=None, shift=None, time=None):
         self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('.\config\\a.config')
+        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
         self.__period = period
         self.__shift = shift
-        data = pd.read_csv(self.__conf.read('common','data_path'))
+        data = pd.read_csv(self.__conf.get('common','data_path'))
         self.__time = time
         if period is not None:
-            self.data = data[data['Time (UTC)'] <= time][-self.__period + self.__shift:-self.__shift]
+            self.data = data[data['Time (UTC)'] <= time][-self.__period - self.__shift:-self.__shift]
         elif period is None and shift != 0:
-            self.data = data[data['Time (UTC)'] < time][-shift:]
+            self.data = data[data['Time (UTC)'] < time][-self.__shift:]
 
 
 class Ma(Indicator):
@@ -49,9 +49,9 @@ class BarInfo(Indicator):
 
     def get_barinfo(self):
         res = {}
-        res['open'] = self.data['Open'].values
-        res['high'] = self.data['High'].values
-        res['close'] = self.data['Close'].values
-        res['low'] = self.data['Low'].values
-        res['time'] = self.data['Time (UTC)'].values
+        res['open'] = self.data['Open'].values[0]
+        res['high'] = self.data['High'].values[0]
+        res['close'] = self.data['Close'].values[0]
+        res['low'] = self.data['Low'].values[0]
+        res['time'] = self.data['Time (UTC)'].values[0]
         return res
