@@ -4,7 +4,6 @@ from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
 import ConfigParser
 import logging
-import sys
 
 class BaseStrategy(object):
     def __init__(self):

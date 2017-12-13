@@ -1,13 +1,13 @@
 # encoding=utf8
-from EventEngine.EventType import EVENT_NEWDATA, EVENT_NEWORDER
-from EventEngine.EventEngine import EventEngine
-from Strategy.Strategy import BaseStrategy
-from DataHandler.DataHandle import DataSliceHandle, DataHandle
 import pandas as pd
-from Strategy.Indicators import BarInfo, Ma
-from Enums.OrderType import OrderType
-from Enums.OrderStatus import OrderStatus
 
+from DataHandler.DataHandle import DataSliceHandle, DataHandle
+from Enums.OrderStatus import OrderStatus
+from Enums.OrderType import OrderType
+from EventEngine.EventEngine import EventEngine
+from EventEngine.EventType import EVENT_NEWDATA
+from Strategy.Strategy import BaseStrategy
+from Technology.Indicators.Indicators import Ma
 
 MAGIC = '1232525'
 SPREAD = 0.00030

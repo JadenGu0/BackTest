@@ -1,12 +1,14 @@
 # encoding=utf8
-from EventEngine.EventType import EVENT_NEWDATA, EVENT_NEWORDER
-from EventEngine.EventEngine import EventEngine
-from Strategy.Strategy import BaseStrategy
-from DataHandler.DataHandle import DataSliceHandle, DataHandle
-from Enums.OrderType import OrderType
-from Enums.OrderStatus import OrderStatus
-from Strategy.Indicators import High, Low, BarInfo
 import ConfigParser
+
+from DataHandler.DataHandle import DataSliceHandle, DataHandle
+from Enums.OrderStatus import OrderStatus
+from Enums.OrderType import OrderType
+from EventEngine.EventEngine import EventEngine
+from EventEngine.EventType import EVENT_NEWDATA
+from Strategy.Strategy import BaseStrategy
+from Technology.Indicators.Indicators import High, Low, BarInfo
+from Technology.Indicators.PreCalculate import PreCalculate
 
 
 class MyStrategy(BaseStrategy):
@@ -179,6 +181,14 @@ def test(eventEngine):
 
 
 if __name__ == '__main__':
+    pre_handler = PreCalculate(delta=150)
+    pre_handler.data_split()
+    pre_handler.high_calculate(period=120,shift=2)
+    pre_handler.high_calculate(period=8, shift=2)
+    pre_handler.low_calculate(period=120,shift=2)
+    pre_handler.low_calculate(period=8,shift=2)
+    pre_handler.high_calculate(period=8,shift=1)
+    pre_handler.low_calculate(period=8,shift=1)
     eventEngine = EventEngine()
     test(eventEngine)
     # eventEngine.Stop()
