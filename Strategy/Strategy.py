@@ -3,14 +3,11 @@ from DataHandler.MongoHandler import MongoHandler
 from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
 import ConfigParser
-
+import logging
+import sys
 
 class BaseStrategy(object):
     def __init__(self):
-        # self.__eventEngine = eventEngine
-        # self.__eventEngine.AddEventListener(type_=EVENT_NEWORDER, handler=self.SendOrder)
-        # # self.__eventEngine.AddEventListener(type_=EVENT_CLOSEORDER, handler=self.CloseOrder)
-        # self.__eventEngine.AddEventListener(type_=EVENT_MODIFYORDER, handler=self.ModifyOrder)
         self.__conf = ConfigParser.ConfigParser()
         self.__conf.read('D:\Github\BackTest\config\\a.config')
         self.magic = self.__conf.get('common', 'magic')
@@ -18,6 +15,19 @@ class BaseStrategy(object):
         self.spread = float(self.__conf.get('common', 'spread'))
         self.data_path = self.__conf.get('common', 'data_path')
         self.mount = int(self.__conf.get('account', 'mount'))
+
+        self.__logger = logging.getLogger()
+        self.__logger.setLevel(logging.INFO)
+        fh = logging.FileHandler(self.__conf.get('common','log_path'),mode='w')
+        fh.setLevel(logging.WARNING)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.WARNING)
+        formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
+        fh.setFormatter(formatter)
+        ch.setFormatter(formatter)
+        self.__logger.addHandler(fh)
+        self.__logger.addHandler(ch)
+
 
     def OrderProcess(self, DataSlice=None, OrderInfo=None):
         # 在策略逻辑执行之前判断当前价位针对于持仓单是否会触发止盈和止损
@@ -82,7 +92,7 @@ class BaseStrategy(object):
         """
 
     def SendOrder(self, orderinfo=None):
-
+        self.__logger.info('TIME:%s - new order open with lot:%f at %f' %(orderinfo['opentime'],orderinfo['lot'],orderinfo['openprice']))
         self.__mongohandler.save_orderinfo(orderinfo)
 
     # def CloseOrder(self, ticket, dataslice=None):
@@ -92,6 +102,7 @@ class BaseStrategy(object):
     #         self.SendEvent(type=EVENT_CLOSEORDER, orderinfo=orderinfo)
 
     def ModifyOrder(self, modifyinfo=None):
+        self.__logger.info('TIME:%s - order modify')
         self.__mongohandler.modify_order(modifyinfo)
 
         # def SendOrderEvent(self, type=None, orderinfo=None):
