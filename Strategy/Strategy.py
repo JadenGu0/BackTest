@@ -5,27 +5,28 @@ from Enums.OrderStatus import OrderStatus
 import ConfigParser
 import logging
 
-class BaseStrategy(object):
-    def __init__(self):
-        self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
-        self.magic = self.__conf.get('common', 'magic')
-        self.__mongohandler = MongoHandler(self.magic)
-        self.spread = float(self.__conf.get('common', 'spread'))
-        self.data_path = self.__conf.get('common', 'data_path')
-        self.mount = int(self.__conf.get('account', 'mount'))
-        # self.__logger = logging.getLogger()
-        # self.__logger.setLevel(logging.INFO)
-        # fh = logging.FileHandler(self.__conf.get('common','log_path'),mode='w')
-        # fh.setLevel(logging.WARNING)
-        # ch = logging.StreamHandler()
-        # ch.setLevel(logging.WARNING)
-        # formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
-        # fh.setFormatter(formatter)
-        # ch.setFormatter(formatter)
-        # self.__logger.addHandler(fh)
-        # self.__logger.addHandler(ch)
 
+class BaseStrategy(object):
+    conf = ConfigParser.ConfigParser()
+    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    fh = logging.FileHandler(conf.get('common', 'log_path'), mode='w')
+    fh.setLevel(logging.WARNING)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.WARNING)
+    formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    def __init__(self):
+        self.magic = self.conf.get('common', 'magic')
+        self.__mongohandler = MongoHandler(self.magic)
+        self.spread = float(self.conf.get('common', 'spread'))
+        self.data_path = self.conf.get('common', 'data_path')
+        self.mount = int(self.conf.get('account', 'mount'))
 
     def OrderProcess(self, DataSlice=None, OrderInfo=None):
         # 在策略逻辑执行之前判断当前价位针对于持仓单是否会触发止盈和止损
@@ -34,7 +35,8 @@ class BaseStrategy(object):
             if item['type'] == OrderType.BUY.value and 'stoploss' in item:
                 if DataSlice['low'] <= item['stoploss']:
                     # 多单止损出场  修改数据库记录
-                    value = round((round(item['stoploss'], 5) - item['openprice']-self.spread) * item['lot'] * 1000 * 100, 2)
+                    value = round(
+                        (round(item['stoploss'], 5) - item['openprice'] - self.spread) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -46,7 +48,8 @@ class BaseStrategy(object):
             if item['type'] == OrderType.BUY.value and 'takeprofit' in item:
                 if DataSlice['high'] >= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
-                    value = round((round(item['takeprofit'], 5) - item['openprice']-self.spread) * item['lot'] * 1000 * 100, 2)
+                    value = round(
+                        (round(item['takeprofit'], 5) - item['openprice'] - self.spread) * item['lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -60,7 +63,8 @@ class BaseStrategy(object):
                     # 空单止损出场 修改数据库记录
                     # 注意 空单止损是提前点差出场的
                     value = round(
-                        (item['openprice'] - round(item['stoploss'] - self.spread, 5)-self.spread) * item['lot'] * 1000 * 100, 2)
+                        (item['openprice'] - round(item['stoploss'] - self.spread, 5) - self.spread) * item[
+                            'lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -70,10 +74,11 @@ class BaseStrategy(object):
                     self.ModifyOrder(res)
             if item['type'] == OrderType.SELL.value and 'takeprofit' in item:
                 if DataSlice['low'] <= item['takeprofit'] - self.spread:
-                    # 多单止盈出场 修改数据库记录
+                    # 空单止盈出场 修改数据库记录
                     # 注意 空单止盈是过点差止盈
                     value = round(
-                        (item['openprice'] - round(item['takeprofit'] - self.spread, 5)-self.spread) * item['lot'] * 1000 * 100, 2)
+                        (item['openprice'] - round(item['takeprofit'] - self.spread, 5) - self.spread) * item[
+                            'lot'] * 1000 * 100, 2)
                     new_mount = mount + value
                     mount = new_mount
                     res = dict(id=item['_id'],
@@ -90,7 +95,8 @@ class BaseStrategy(object):
         """
 
     def SendOrder(self, orderinfo=None):
-        # self.__logger.warning('TIME:%s - new order open with lot:%f at %f' %(orderinfo['opentime'],orderinfo['lot'],orderinfo['openprice']))
+        self.logger.warning('TIME:%s - new order open with lot:%f at %f' % (
+        orderinfo['opentime'], orderinfo['lot'], orderinfo['openprice']))
         self.__mongohandler.save_orderinfo(orderinfo)
 
     # def CloseOrder(self, ticket, dataslice=None):
@@ -100,13 +106,8 @@ class BaseStrategy(object):
     #         self.SendEvent(type=EVENT_CLOSEORDER, orderinfo=orderinfo)
 
     def ModifyOrder(self, modifyinfo=None):
-        # self.__logger.info('TIME:%s - order modify')
+        self.logger.info('TIME:%s - order modify')
         self.__mongohandler.modify_order(modifyinfo)
-
-        # def SendOrderEvent(self, type=None, orderinfo=None):
-        #     OrderEvent = Event(type=type)
-        #     OrderEvent.dict = orderinfo
-        #     self.__eventEngine.SendEvent(OrderEvent)
 
     def Holdingorder_Statistic(self, Ask=None, Bid=None):
         return self.__mongohandler.holdingorder_statistic(Ask=Ask, Bid=Bid)
@@ -151,28 +152,17 @@ class BaseStrategy(object):
             info=res
         )
 
-    # def MountCalculate(self):
-    #     # 计算当前账户净值
-    #     pipline = [{'$group': {'_id': '$value', 'count': {'$sum': 1}}}]
-    #     arrge_res = self.__mongohandler.arrgegate(pipline)
-    #     mount = self.mount
-    #     if arrge_res is not None:
-    #         for item in arrge_res:
-    #             if item['_id'] is not None:
-    #                 mount = mount + item['count'] * item['_id']
-    #     return mount
-
     def MountCalculate(self):
         pipline = [
-            {'$group':{
-                '_id':'$status',
-                'last_mount':{
-                    '$last':'$mount'
+            {'$group': {
+                '_id': '$status',
+                'last_mount': {
+                    '$last': '$mount'
                 }
             }}
         ]
         res = self.__mongohandler.arrgegate(pipline)
-        mount=self.mount
+        mount = self.mount
         for i in res:
             if i['last_mount'] is not None:
                 mount = float(i['last_mount'])
