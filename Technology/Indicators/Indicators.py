@@ -5,12 +5,13 @@ import pandas as pd
 
 
 class Indicator(object):
+    conf = ConfigParser.ConfigParser()
+    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    data = pd.read_csv(conf.get('common', 'test_data_path'))
+
     def __init__(self, period=None, shift=None, time=None):
-        self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
         self.__period = period
         self.__shift = shift
-        self.data = pd.read_csv(self.__conf.get('common', 'test_data_path'))
         self.__time = time
         if period is None and shift != 0:
             self.bardata = self.data[self.data['Time (UTC)'] < time][-self.__shift:]

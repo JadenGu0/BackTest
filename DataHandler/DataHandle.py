@@ -8,13 +8,13 @@ class DataHandle(object):
     """
     数据预处理类，用于讲数据按照开始和结束时间切片并返回
     """
+    conf = ConfigParser.ConfigParser()
+    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    data = pd.read_csv(conf.get('common', 'data_path'))
 
     def __init__(self):
-        self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
-        self.data = pd.read_csv(self.__conf.get('common', 'data_path'))
-        self.start = self.__conf.get('common', 'start')
-        self.end = self.__conf.get('common', 'end')
+        self.start = self.conf.get('common', 'start')
+        self.end = self.conf.get('common', 'end')
 
     def SplitData(self):
         data = self.data[self.data['Time (UTC)'] >= self.start]
@@ -26,6 +26,8 @@ class DataSliceHandle(object):
     """
     用来处理取到的数据切片
     """
+    conf = ConfigParser.ConfigParser()
+    conf.read('D:\Github\BackTest\config\\best_marting.config')
 
     def __init__(self, eventEngine, data=None):
         """
@@ -42,9 +44,7 @@ class DataSliceHandle(object):
         self.__low = data[3]
         self.__close = data[4]
         self.__volume = data[5]
-        self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
-        self.__magic = self.__conf.get('common', 'magic')
+        self.__magic = self.conf.get('common', 'magic')
 
     def SendDataEvent(self, type):
         """

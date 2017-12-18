@@ -7,7 +7,7 @@ from Enums.OrderType import OrderType
 from EventEngine.EventEngine import EventEngine
 from EventEngine.EventType import EVENT_NEWDATA
 from Strategy.Strategy import BaseStrategy
-from Technology.Indicators.Indicators import High, Low, BarInfo
+
 from Technology.Indicators.PreCalculate import PreCalculate
 
 
@@ -181,14 +181,15 @@ def test(eventEngine):
 
 
 if __name__ == '__main__':
-    pre_handler = PreCalculate(delta=150)
+    pre_handler = PreCalculate(delta=170)
     pre_handler.data_split()
-    pre_handler.high_calculate(period=120,shift=2)
-    pre_handler.high_calculate(period=8, shift=2)
-    pre_handler.low_calculate(period=120,shift=2)
-    pre_handler.low_calculate(period=8,shift=2)
-    pre_handler.high_calculate(period=8,shift=1)
-    pre_handler.low_calculate(period=8,shift=1)
+    pre_handler.high_calculate(period=150,shift=2)
+    pre_handler.high_calculate(period=4, shift=2)
+    pre_handler.low_calculate(period=150,shift=2)
+    pre_handler.low_calculate(period=4,shift=2)
+    pre_handler.high_calculate(period=4,shift=1)
+    pre_handler.low_calculate(period=4,shift=1)
+    from Technology.Indicators.Indicators import High, Low, BarInfo
     eventEngine = EventEngine()
     test(eventEngine)
     # eventEngine.Stop()
