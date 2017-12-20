@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from Enums.OrderStatus import OrderStatus
 from Enums.OrderType import OrderType
 import datetime
+from bson.objectid import ObjectId
 
 class MongoHandler(object):
     def __init__(self, magic):
@@ -121,8 +122,12 @@ class MongoHandler(object):
             res['max_sell_lot']=max_sell_lot
         return res
 
-    def get_orderdetail(self, ticket=None):
-        pass
+    def get_orderdetail(self, id=None,info=None):
+        res = self.__collection_order.find_one({'_id':ObjectId(id)})
+        res_dict={}
+        for i in info:
+            res_dict[i]=res[i]
+        return res_dict
 
     def modify_order(self,modifyinfo=None):
         for k,v in modifyinfo['modifyinfo'].items():
@@ -138,3 +143,7 @@ class MongoHandler(object):
             return self.__collection_order.find(kwargs)
 
 
+if __name__ == '__main__':
+    a = MongoHandler(magic='122')
+    b=a.get_orderdetail(id='5a38ac84e46911099486d070',info=['lot','openprice'])
+    print b

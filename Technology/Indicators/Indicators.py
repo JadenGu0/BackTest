@@ -3,10 +3,9 @@ import ConfigParser
 import pandas as pd
 
 
-
 class Indicator(object):
     conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    conf.read('D:\Github\BackTest\config\\pattern.config')
     data = pd.read_csv(conf.get('common', 'test_data_path'))
 
     def __init__(self, period=None, shift=None, time=None):
@@ -52,10 +51,11 @@ class BarInfo(Indicator):
         Indicator.__init__(self, period, shift, time)
 
     def get_barinfo(self):
-        res = {}
-        res['open'] = self.bardata['Open'].values[0]
-        res['high'] = self.bardata['High'].values[0]
-        res['close'] = self.bardata['Close'].values[0]
-        res['low'] = self.bardata['Low'].values[0]
-        res['time'] = self.bardata['Time (UTC)'].values[0]
+        res = dict(
+            open=self.bardata['Open'].values[0],
+            high=self.bardata['High'].values[0],
+            close=self.bardata['Close'].values[0],
+            low=self.bardata['Low'].values[0],
+            time=self.bardata['Time (UTC)'].values[0]
+        )
         return res

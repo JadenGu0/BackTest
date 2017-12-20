@@ -12,21 +12,22 @@ from Technology.Indicators.PreCalculate import PreCalculate
 
 
 class MyStrategy(BaseStrategy):
+    conf = ConfigParser.ConfigParser()
+    conf.read('D:\Github\BackTest\config\\best_marting.config')
     def __init__(self):
         BaseStrategy.__init__(self)
-        self.__conf = ConfigParser.ConfigParser()
-        self.__conf.read('D:\Github\BackTest\config\\best_marting.config')
-        self.__marting = float(self.__conf.get('strategy', 'marting'))
-        self.__lot = float(self.__conf.get('strategy', 'lot'))
-        self.__distance = float(self.__conf.get('strategy', 'distance'))
-        self.__profit = float(self.__conf.get('strategy', 'profit'))
-        self.__long_period = int(self.__conf.get('strategy', 'long_period'))
-        self.__short_period = int(self.__conf.get('strategy', 'short_period'))
-        self.__call_back = float(self.__conf.get('strategy', 'call_back'))
-        self.__profit = float(self.__conf.get('strategy', 'profit'))
-        self.__max_lot = int(self.__conf.get('strategy', 'max_lot'))
-        self.__move = float(self.__conf.get('strategy', 'move'))
-        self.__bar_proportion = float(self.__conf.get('strategy', 'bar_proportion'))
+
+        self.__marting = float(self.conf.get('strategy', 'marting'))
+        self.__lot = float(self.conf.get('strategy', 'lot'))
+        self.__distance = float(self.conf.get('strategy', 'distance'))
+        self.__profit = float(self.conf.get('strategy', 'profit'))
+        self.__long_period = int(self.conf.get('strategy', 'long_period'))
+        self.__short_period = int(self.conf.get('strategy', 'short_period'))
+        self.__call_back = float(self.conf.get('strategy', 'call_back'))
+        self.__profit = float(self.conf.get('strategy', 'profit'))
+        self.__max_lot = int(self.conf.get('strategy', 'max_lot'))
+        self.__move = float(self.conf.get('strategy', 'move'))
+        self.__bar_proportion = float(self.conf.get('strategy', 'bar_proportion'))
 
     def GetNewData(self, event):
         print event.dict['data']['time']
@@ -181,8 +182,9 @@ def test(eventEngine):
 
 
 if __name__ == '__main__':
+    #策略回测运行提前计算用到的指标数据，目的是加快回测过程中速度
     pre_handler = PreCalculate(delta=170)
-    pre_handler.data_split()
+    # pre_handler.data_split()
     pre_handler.high_calculate(period=150,shift=2)
     pre_handler.high_calculate(period=4, shift=2)
     pre_handler.low_calculate(period=150,shift=2)

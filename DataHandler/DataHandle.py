@@ -9,7 +9,7 @@ class DataHandle(object):
     数据预处理类，用于讲数据按照开始和结束时间切片并返回
     """
     conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    conf.read('D:\Github\BackTest\config\\pattern.config')
     data = pd.read_csv(conf.get('common', 'data_path'))
 
     def __init__(self):
@@ -27,7 +27,7 @@ class DataSliceHandle(object):
     用来处理取到的数据切片
     """
     conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    conf.read('D:\Github\BackTest\config\\pattern.config')
 
     def __init__(self, eventEngine, data=None):
         """
