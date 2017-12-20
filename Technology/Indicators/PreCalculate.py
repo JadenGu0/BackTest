@@ -7,7 +7,7 @@ import logging
 
 class PreCalculate(object):
     conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\best_marting.config')
+    conf.read('D:\Github\BackTest\config\\pattern.config')
     data = pd.read_csv(conf.get('common', 'data_path'))
 
     def __init__(self, delta=None):
@@ -18,8 +18,9 @@ class PreCalculate(object):
         self.end = self.conf.get('common', 'end')
         self.__data_period = int(self.conf.get('common', 'period'))
         self.__point = int(self.conf.get('common', 'point'))
+        self.__data_split()
 
-    def data_split(self):
+    def __data_split(self):
         start_time = datetime.datetime.strptime(self.start, '%Y.%m.%d')
         delta_time = datetime.timedelta(hours=-(self.__delta / (60 / self.__data_period)))
         start_time = (start_time + delta_time).strftime('%Y.%m.%d')
@@ -52,8 +53,4 @@ class PreCalculate(object):
         data.to_csv(self.conf.get('common', 'test_data_path'), index=None, float_format='%.5f')
         print 'low calculate finish'
 
-if __name__ == '__main__':
-    test = PreCalculate(delta=120)
-    test.data_split()
-    test.ma_calculate(period=10, shift=1)
-    test.high_calculate(period=10, shift=1)
+

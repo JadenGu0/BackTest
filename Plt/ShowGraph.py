@@ -17,15 +17,15 @@ class Graph(object):
         ax1.plot(timeinfo['time'], timeinfo['mount'], label='balance')
         ax1.plot(timeinfo['time'], timeinfo['max_mount'], label='max_balance')
         ax1.plot(timeinfo['time'], timeinfo['min_mount'], label='min_balance')
-        ax2.bar(timeinfo['time'], timeinfo['sell_lot'], facecolor='#ff9999', width=0.2, label='buy_lot')
-        ax2.bar(timeinfo['time'], timeinfo['buy_lot'], facecolor='#9999ff', width=0.2, label='sell_lot')
+        ax2.bar(timeinfo['time'], timeinfo['sell_lot'], facecolor='#ff9999', width=0.2, label='sell_lot')
+        ax2.bar(timeinfo['time'], timeinfo['buy_lot'], facecolor='#9999ff', width=0.2, label='buy_lot')
         ax1.legend(loc='upper left')
         ax2.legend(loc='upper left')
         plt.show()
 
 
 if __name__ == '__main__':
-    timeinfo = MongoHandler(magic='122').get_timeinfo()
+    timeinfo = MongoHandler(magic='155').get_timeinfo()
     fig = plt.figure("Strategy Tester of 122")
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
