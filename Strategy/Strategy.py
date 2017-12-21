@@ -4,50 +4,63 @@ from Enums.OrderType import OrderType
 from Enums.OrderStatus import OrderStatus
 import ConfigParser
 import logging
+from Error.error import LotError, OrderModifyError, OrderSendError
+
+OrderSendCheck = ['lot', 'openprice', 'status', 'type', 'openprice']
+OrderModifyCheck = ['id', 'modifyinfo']
 
 
 class BaseStrategy(object):
-    conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\pattern.config')
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    fh = logging.FileHandler(conf.get('common', 'log_path'), mode='w')
-    fh.setLevel(logging.WARNING)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
-    formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    try:
+        conf = ConfigParser.ConfigParser()
+        conf.read('D:\Github\BackTest\config\\pattern.config')
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        fh = logging.FileHandler(conf.get('common', 'log_path'), mode='w')
+        fh.setLevel(logging.WARNING)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.WARNING)
+        formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
+        fh.setFormatter(formatter)
+        ch.setFormatter(formatter)
+        logger.addHandler(fh)
+        logger.addHandler(ch)
+    except (ConfigParser.NoSectionError, IOError), e:
+        logging.error(e)
+        raise
 
     def __init__(self):
-        self.magic = self.conf.get('common', 'magic')
-        self.__mongohandler = MongoHandler(self.magic)
-        self.spread = float(self.conf.get('common', 'spread'))
-        self.data_path = self.conf.get('common', 'data_path')
-        self.mount = int(self.conf.get('account', 'mount'))
+        try:
+            self.magic = self.conf.get('common', 'magic')
+            self.__mongohandler = MongoHandler(self.magic)
+            self.spread = float(self.conf.get('common', 'spread'))
+            self.data_path = self.conf.get('common', 'data_path')
+            self.mount = int(self.conf.get('account', 'mount'))
+        except ConfigParser.NoSectionError, e:
+            logging.error(e)
+            raise
 
-    def ValueProcess(self,ClosePrice=None,Openprice=None,Lot=None,Type=None):
+    def __ValueProcess(self, ClosePrice=None, Openprice=None, Lot=None, Type=None):
         mount = self.MountCalculate()
         if Type == OrderType.BUY.value:
             value = round(
-                (ClosePrice-Openprice-self.spread)*Lot*1000*100,2
+                (ClosePrice - Openprice - self.spread) * Lot * 1000 * 100, 2
             )
         else:
             value = round(
-                (Openprice-ClosePrice-self.spread)*Lot*1000*100,2
+                (Openprice - ClosePrice - self.spread) * Lot * 1000 * 100, 2
             )
-        mount = mount+value
-        return mount,value
+        mount = mount + value
+        return mount, value
+
     def OrderProcess(self, DataSlice=None, OrderInfo=None):
         # 在策略逻辑执行之前判断当前价位针对于持仓单是否会触发止盈和止损
-        mount = self.MountCalculate()
         for item in OrderInfo['buy_order']:
             if item['type'] == OrderType.BUY.value and 'stoploss' in item:
                 if DataSlice['low'] <= item['stoploss']:
                     # 多单止损出场  修改数据库记录
-                    new_mount,value = self.ValueProcess(ClosePrice=item['stoploss'],Openprice=item['openprice'],Lot=item['lot'],Type=OrderType.BUY.value)
+                    new_mount, value = self.__ValueProcess(ClosePrice=item['stoploss'], Openprice=item['openprice'],
+                                                         Lot=item['lot'], Type=OrderType.BUY.value)
                     res = dict(id=item['_id'],
                                modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
                                                closetime=DataSlice['time'],
@@ -57,7 +70,8 @@ class BaseStrategy(object):
             if item['type'] == OrderType.BUY.value and 'takeprofit' in item:
                 if DataSlice['high'] >= item['takeprofit']:
                     # 多单止盈出场 修改数据库记录
-                    new_mount,value = self.ValueProcess(ClosePrice=item['takeprofit'],Openprice=item['openprice'],Lot=item['lot'],Type=OrderType.BUY.value)
+                    new_mount, value = self.__ValueProcess(ClosePrice=item['takeprofit'], Openprice=item['openprice'],
+                                                         Lot=item['lot'], Type=OrderType.BUY.value)
                     res = dict(id=item['_id'],
                                modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
                                                closetime=DataSlice['time'],
@@ -68,7 +82,8 @@ class BaseStrategy(object):
                 if DataSlice['high'] >= item['stoploss'] - self.spread:
                     # 空单止损出场 修改数据库记录
                     # 注意 空单止损是提前点差出场的
-                    new_mount,value = self.ValueProcess(ClosePrice=item['stoploss'],Openprice=item['openprice'],Lot=item['lot'],Type=OrderType.SELL.value)
+                    new_mount, value = self.__ValueProcess(ClosePrice=item['stoploss'], Openprice=item['openprice'],
+                                                         Lot=item['lot'], Type=OrderType.SELL.value)
                     res = dict(id=item['_id'],
                                modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
                                                closetime=DataSlice['time'],
@@ -78,7 +93,8 @@ class BaseStrategy(object):
                 if DataSlice['low'] <= item['takeprofit'] - self.spread:
                     # 空单止盈出场 修改数据库记录
                     # 注意 空单止盈是过点差止盈
-                    new_mount,value = self.ValueProcess(ClosePrice=item['takeprofit'],Openprice=item['openprice'],Lot=item['lot'],Type=OrderType.SELL.value)
+                    new_mount, value = self.__ValueProcess(ClosePrice=item['takeprofit'], Openprice=item['openprice'],
+                                                         Lot=item['lot'], Type=OrderType.SELL.value)
                     res = dict(id=item['_id'],
                                modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
                                                closetime=DataSlice['time'],
@@ -93,43 +109,64 @@ class BaseStrategy(object):
         """
 
     def SendOrder(self, orderinfo=None):
-        self.logger.warning('TIME:%s - new order open with lot:%f at %f' % (
-        orderinfo['opentime'], orderinfo['lot'], orderinfo['openprice']))
-        self.__mongohandler.save_orderinfo(orderinfo)
+        try:
+            if orderinfo['lot'] < float(self.conf.get('common', 'min_lot')) or \
+                            orderinfo['lot'] > float(self.conf.get('common','max_lot')) or \
+                            len(str(orderinfo['lot']).split('.')[1]) > 2:
+                raise LotError
+            for item in OrderSendCheck:
+                if item not in orderinfo:
+                    raise OrderSendError
+            self.logger.warning('TIME:%s - new order open with lot:%f at %f' % (
+                orderinfo['opentime'], orderinfo['lot'], orderinfo['openprice']))
+            self.__mongohandler.save_orderinfo(orderinfo)
+        except LotError, e:
+            logging.error(e)
+        except OrderSendError, e:
+            logging.error(e)
 
     def CloseOrder(self, info=None):
-        self.logger.warning('TIME:%s - order closed at:%f' % (info['modifyinfo']['closetime'], info['modifyinfo']['closeprice']))
-        order_info = self.__mongohandler.get_orderdetail(id=info['id'],info=['lot','openprice'])
-        close_time = info['modifyinfo']['closetime']
-        close_price = info['modifyinfo']['closeprice']
-        lot=order_info['lot']
-        open_price=order_info['openprice']
-        order_type=info['modifyinfo']['type']
-        if order_type == OrderType.BUY.value:
-            new_mount, value = self.ValueProcess(ClosePrice=close_price, Openprice=open_price,
-                                                 Lot=lot, Type=OrderType.BUY.value)
-            res = dict(id=info['id'],
-                       modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
-                                       closetime=close_time,
-                                       closeprice=round(close_price, 5)))
+        try:
+            for item in OrderModifyCheck:
+                if item not in info:
+                    raise OrderModifyError
+            self.logger.warning(
+                'TIME:%s - order closed at:%f' % (info['modifyinfo']['closetime'], info['modifyinfo']['closeprice']))
+            order_info = self.__mongohandler.get_orderdetail(id=info['id'], info=['lot', 'openprice'])
+            close_time = info['modifyinfo']['closetime']
+            close_price = info['modifyinfo']['closeprice']
+            lot = order_info['lot']
+            open_price = order_info['openprice']
+            order_type = info['modifyinfo']['type']
+            if order_type == OrderType.BUY.value:
+                new_mount, value = self.__ValueProcess(ClosePrice=close_price, Openprice=open_price,
+                                                     Lot=lot, Type=OrderType.BUY.value)
+                res = dict(id=info['id'],
+                           modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
+                                           closetime=close_time,
+                                           closeprice=round(close_price, 5)))
 
-            self.ModifyOrder(res)
-        if order_type == OrderType.SELL.value:
-            new_mount, value = self.ValueProcess(ClosePrice=close_price, Openprice=open_price,
-                                                 Lot=lot, Type=OrderType.SELL.value)
-            res = dict(id=info['id'],
-                       modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
-                                       closetime=close_time,
-                                       closeprice=round(close_price, 5)))
-            self.ModifyOrder(res)
-
-
-
-
+                self.ModifyOrder(res)
+            if order_type == OrderType.SELL.value:
+                new_mount, value = self.__ValueProcess(ClosePrice=close_price, Openprice=open_price,
+                                                     Lot=lot, Type=OrderType.SELL.value)
+                res = dict(id=info['id'],
+                           modifyinfo=dict(mount=new_mount, value=value, status=OrderStatus.CLOSED.value,
+                                           closetime=close_time,
+                                           closeprice=round(close_price, 5)))
+                self.ModifyOrder(res)
+        except OrderModifyError, e:
+            logging.error(e)
 
     def ModifyOrder(self, modifyinfo=None):
-        self.logger.info('TIME:%s - order modify')
-        self.__mongohandler.modify_order(modifyinfo)
+        try:
+            for item in OrderModifyCheck:
+                if item not in modifyinfo:
+                    raise OrderModifyError
+            self.logger.info('TIME:%s - order modify')
+            self.__mongohandler.modify_order(modifyinfo)
+        except OrderModifyError, e:
+            logging.error(e)
 
     def Holdingorder_Statistic(self, Ask=None, Bid=None):
         return self.__mongohandler.holdingorder_statistic(Ask=Ask, Bid=Bid)
@@ -165,10 +202,10 @@ class BaseStrategy(object):
         res = dict(
             time=Time,
             mount=mount,
-            max_mount=max_mount,
-            min_mount=min_mount,
-            buy_lot=buy_lot,
-            sell_lot=sell_lot
+            max_mount=round(max_mount, 2),
+            min_mount=round(min_mount, 2),
+            buy_lot=round(buy_lot, 2),
+            sell_lot=round(sell_lot, 2)
         )
         self.__mongohandler.save_timeinfo(
             info=res
