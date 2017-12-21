@@ -7,24 +7,33 @@ from Enums.OrderType import OrderType
 from EventEngine.EventEngine import EventEngine
 from EventEngine.EventType import EVENT_NEWDATA
 from Strategy.Strategy import BaseStrategy
-
+from Error.error import LotError, StartEndError
 from Technology.Indicators.PreCalculate import PreCalculate
+import logging
 
 
 class MyStrategy(BaseStrategy):
-    conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\pattern.config')
+    try:
+        conf = ConfigParser.ConfigParser()
+        conf.read('D:\Github\BackTest\config\\pattern.config')
+    except (ConfigParser.NoSectionError, IOError), e:
+        logging.error(e)
+        raise
 
     def __init__(self):
-        BaseStrategy.__init__(self)
-        self.__lot = float(self.conf.get('strategy', 'lot'))
-        self.__takeprofit = float(self.conf.get('strategy', 'takeprofit'))
-        self.__stoploss = float(self.conf.get('strategy', 'stoploss'))
-        self.__long_period = int(self.conf.get('strategy', 'long_period'))
-        self.__short_period = int(self.conf.get('strategy', 'short_period'))
-        self.__call_back = float(self.conf.get('strategy', 'call_back'))
-        self.__move = float(self.conf.get('strategy', 'move'))
-        self.__proportion = float(self.conf.get('strategy', 'proportion'))
+        try:
+            BaseStrategy.__init__(self)
+            self.__lot = float(self.conf.get('strategy', 'lot'))
+            self.__takeprofit = float(self.conf.get('strategy', 'takeprofit'))
+            self.__stoploss = float(self.conf.get('strategy', 'stoploss'))
+            self.__long_period = int(self.conf.get('strategy', 'long_period'))
+            self.__short_period = int(self.conf.get('strategy', 'short_period'))
+            self.__call_back = float(self.conf.get('strategy', 'call_back'))
+            self.__move = float(self.conf.get('strategy', 'move'))
+            self.__proportion = float(self.conf.get('strategy', 'proportion'))
+        except (ConfigParser.NoSectionError, IOError), e:
+            logging.error(e)
+            raise
 
     def GetNewData(self, event):
         print event.dict['data']['time']
@@ -72,11 +81,11 @@ class MyStrategy(BaseStrategy):
         # 经过策略判断之后调用self.All_HoldingOrderinfo()统计当前持仓单
         orderinfo = self.All_HoldingOrderinfo()
         # 判断是否满足平仓条件
-        if orderstatistic['buy_number']!=0:
-            if open_price>close_high:
-                #平仓多单
+        if orderstatistic['buy_number'] != 0:
+            if open_price > close_high:
+                # 平仓多单
                 for item in orderinfo['buy_order']:
-                    res=dict(
+                    res = dict(
                         id=item['_id'],
                         modifyinfo=dict(
                             closetime=event.dict['data']['time'],
@@ -85,11 +94,11 @@ class MyStrategy(BaseStrategy):
                         )
                     )
                     self.CloseOrder(res)
-        if orderstatistic['sell_number']!=0:
-            if open_price<close_low:
-                #平仓空单
+        if orderstatistic['sell_number'] != 0:
+            if open_price < close_low:
+                # 平仓空单
                 for item in orderinfo['sell_order']:
-                    res=dict(
+                    res = dict(
                         id=item['_id'],
                         modifyinfo=dict(
                             closetime=event.dict['data']['time'],
@@ -98,7 +107,6 @@ class MyStrategy(BaseStrategy):
                         )
                     )
                     self.CloseOrder(res)
-
 
         # 调用时间处理函数保存当前时刻账户净值，最大净值以及最小净值
         self.TimeInfo(Time=event.dict['data']['time'], High=event.dict['data']['high'],
@@ -128,11 +136,14 @@ def test(eventEngine):
 
 if __name__ == '__main__':
     # 策略回测运行提前计算用到的指标数据，目的是加快回测过程中速度
-    pre_handler = PreCalculate(delta=170)
-    pre_handler.high_calculate(period=40, shift=1)
-    pre_handler.low_calculate(period=40, shift=1)
-    pre_handler.high_calculate(period=7, shift=2)
-    pre_handler.low_calculate(period=7, shift=2)
+    try:
+        pre_handler = PreCalculate(delta=170)
+        pre_handler.high_calculate(period=40, shift=1)
+        pre_handler.low_calculate(period=40, shift=1)
+        pre_handler.high_calculate(period=7, shift=2)
+        pre_handler.low_calculate(period=7, shift=2)
+    except (LotError, StartEndError), e:
+        print e
     from Technology.Indicators.Indicators import High, Low, BarInfo
 
     eventEngine = EventEngine()

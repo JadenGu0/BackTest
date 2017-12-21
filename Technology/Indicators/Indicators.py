@@ -1,20 +1,30 @@
 # encoding=utf8
 import ConfigParser
 import pandas as pd
-
+import logging
+from Error.error import ParameterError
 
 class Indicator(object):
-    conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\pattern.config')
-    data = pd.read_csv(conf.get('common', 'test_data_path'))
+    try:
+        conf = ConfigParser.ConfigParser()
+        conf.read('D:\Github\BackTest\config\\pattern.config')
+        data = pd.read_csv(conf.get('common', 'test_data_path'))
+    except (ConfigParser.NoSectionError, IOError), e:
+        logging.error(e)
+        raise
 
     def __init__(self, period=None, shift=None, time=None):
-        self.__period = period
-        self.__shift = shift
-        self.__time = time
-        if period is None and shift != 0:
-            self.bardata = self.data[self.data['Time (UTC)'] < time][-self.__shift:]
-
+        try:
+            if period<0 or shift<= 0:
+                raise ParameterError
+            self.__period = period
+            self.__shift = shift
+            self.__time = time
+            if period is None and shift != 0:
+                self.bardata = self.data[self.data['Time (UTC)'] < time][-self.__shift:]
+        except ParameterError,e:
+            logging.error(e)
+            raise
 
 class Ma(Indicator):
     def __init__(self, period=None, shift=None, time=None):

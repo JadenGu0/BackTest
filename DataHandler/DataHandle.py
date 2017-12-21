@@ -2,32 +2,48 @@
 from EventEngine.EventEngine import Event
 import ConfigParser
 import pandas as pd
-
+import logging
 
 class DataHandle(object):
     """
     数据预处理类，用于讲数据按照开始和结束时间切片并返回
     """
-    conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\pattern.config')
-    data = pd.read_csv(conf.get('common', 'data_path'))
+    try:
+        conf = ConfigParser.ConfigParser()
+        conf.read('D:\Github\BackTest\config\\pattern.config')
+        data = pd.read_csv(conf.get('common', 'data_path'))
+    except ConfigParser.NoSectionError,e:
+        logging.error(e)
+        raise ConfigParser.NoSectionError
 
     def __init__(self):
-        self.start = self.conf.get('common', 'start')
-        self.end = self.conf.get('common', 'end')
+        try:
+            self.start = self.conf.get('common', 'start')
+            self.end = self.conf.get('common', 'end')
+        except ConfigParser.NoSectionError, e:
+            logging.error(e)
+            raise
 
     def SplitData(self):
-        data = self.data[self.data['Time (UTC)'] >= self.start]
-        data = data[data['Time (UTC)'] <= self.end].values
-        return data
+        try:
+            data = self.data[self.data['Time (UTC)'] >= self.start]
+            data = data[data['Time (UTC)'] <= self.end].values
+            return data
+        except ValueError,e:
+            logging.error(e)
+            raise
 
 
 class DataSliceHandle(object):
     """
     用来处理取到的数据切片
     """
-    conf = ConfigParser.ConfigParser()
-    conf.read('D:\Github\BackTest\config\\pattern.config')
+    try:
+        conf = ConfigParser.ConfigParser()
+        conf.read('D:\Github\BackTest\config\\pattern.config')
+    except ConfigParser.NoSectionError,e:
+        logging.error(e)
+        raise ConfigParser.NoSectionError
 
     def __init__(self, eventEngine, data=None):
         """
@@ -37,14 +53,18 @@ class DataSliceHandle(object):
         :param data:
         :param magic:
         """
-        self.__eventEngine = eventEngine
-        self.__time = data[0]
-        self.__open = data[1]
-        self.__high = data[2]
-        self.__low = data[3]
-        self.__close = data[4]
-        self.__volume = data[5]
-        self.__magic = self.conf.get('common', 'magic')
+        try:
+            self.__eventEngine = eventEngine
+            self.__time = data[0]
+            self.__open = data[1]
+            self.__high = data[2]
+            self.__low = data[3]
+            self.__close = data[4]
+            self.__volume = data[5]
+            self.__magic = self.conf.get('common', 'magic')
+        except (ConfigParser.NoSectionError,IOError), e:
+            logging.error(e)
+            raise
 
     def SendDataEvent(self, type):
         """
